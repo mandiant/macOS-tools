@@ -50,48 +50,50 @@ def getContents(o):
 	else:
 		return None
 
-parser=argparse.ArgumentParser(description="NeXTSTEP Interface Builder (NIB) file parser prints a list of all connections defined in a NIB file")
-parser.add_argument('nibfile', help='path to a NIB file')
+def main():
+	parser=argparse.ArgumentParser(description="NeXTSTEP Interface Builder (NIB) file parser prints a list of all connections defined in a NIB file")
+	parser.add_argument('nibfile', help='path to a NIB file')
 
-args = parser.parse_args()
-with open(args.nibfile, "rb") as rp:
-	plist = ccl_bplist.load(rp)
+	args = parser.parse_args()
+	with open(args.nibfile, "rb") as rp:
+		plist = ccl_bplist.load(rp)
 
-nib = ccl_bplist.deserialise_NsKeyedArchiver(plist)
+	nib = ccl_bplist.deserialise_NsKeyedArchiver(plist)
 
+	ibcons = nib['IB.objectdata']['NSConnections']['NS.objects']
+	for i in range(len(ibcons)):
+		if 'NSLabel' not in ibcons[i]:
+			continue
 
-ibcons = nib['IB.objectdata']['NSConnections']['NS.objects']
-for i in range(len(ibcons)):
-	if 'NSLabel' not in ibcons[i]:
-		continue
+		lbl = ibcons[i]['NSLabel']
+		id = dict(nib['IB.objectdata']['NSConnections'])['NS.objects'][i].value
+		sname = "NA"
+		srcid = "NA"
+		dname = "NA"
+		dstid = "NA"
 
-	lbl = ibcons[i]['NSLabel']
-	id = dict(nib['IB.objectdata']['NSConnections'])['NS.objects'][i].value
-	sname = "NA"
-	srcid = "NA"
-	dname = "NA"
-	dstid = "NA"
+		if 'NSSource' in ibcons[i]:
+			srcid = dict(ibcons[i])['NSSource'].value
+			src = ibcons[i]['NSSource']
+			sname = getClassName(src)
+			scontents = getContents(src)
 
-	if 'NSSource' in ibcons[i]:
-		srcid = dict(ibcons[i])['NSSource'].value
-		src = ibcons[i]['NSSource']
-		sname = getClassName(src)
-		scontents = getContents(src)
+		if 'NSDestination' in ibcons[i]:	
+			dstid = dict(ibcons[i])['NSDestination'].value
+			dst = ibcons[i]['NSDestination']
+			dname = getClassName(dst)
+			dcontents = getContents(dst)
 
-	if 'NSDestination' in ibcons[i]:	
-		dstid = dict(ibcons[i])['NSDestination'].value
-		dst = ibcons[i]['NSDestination']
-		dname = getClassName(dst)
-		dcontents = getContents(dst)
+		out = "%d: %s (%s) - %s " % (i, lbl, id, sname)
+		if scontents:
+			out += "[%s] " % scontents
+
+		out += "(%s) ---> %s "  % (srcid, dname) 
+		if dcontents:
+			out += "[%s] " % dcontents
 		
+		out += "(%s)" % dstid
+		print out
 
-	out = "%d: %s (%s) - %s " % (i, lbl, id, sname)
-	if scontents:
-		out += "[%s] " % scontents
-
-	out += "(%s) ---> %s "  % (srcid, dname) 
-	if dcontents:
-		out += "[%s] " % dcontents
-	
-	out += "(%s)" % dstid
-	print out
+if __name__ == '__main__':
+    main()
