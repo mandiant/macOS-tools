@@ -93,7 +93,7 @@ def main():
 			out += "[%s] " % dcontents
 		
 		out += "(%s)" % dstid
-		print out
+		print out.encode("utf-8")
 
 if __name__ == '__main__':
     main()
